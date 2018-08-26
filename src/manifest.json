@@ -1,0 +1,36 @@
+{
+  "package": "com.daiyaya",
+  "name": "阅影",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "icon": "/Common/logo.png",
+  "minPlatformVersion": 1000,
+  "features": [],
+  "permissions": [
+    { "origin": "*" }
+  ],
+  "config": {
+    "logLevel": "log"
+  },
+  "router": {
+    "entry": "Hello",
+    "pages": {
+      "Hello": {
+        "component": "hello",
+        "path": "/"
+      }
+    }
+  },
+  "display": {
+    "backgroundColor": "#fbf9fe",
+    "titleBar": true,
+    "titleBarBackgroundColor": "#0faeff",
+    "titleBarTextColor": "#ffffff",
+    "menu":true,
+    "pages": {
+      "Hello": {
+        "titleBarText": "TitleBar"
+      }
+    }
+  }
+}
