@@ -1,0 +1,167 @@
+<template>
+    <div class="container">
+        <div class="search-container">
+            <input class="search" enterkeytype="search" onenterkeyclick="enterkeyclicked" placeholder="请输入电影名称、导演或演员" onchange="searchMovie">
+            </input>
+            <input type="button" class="search-btn" value="搜索"/>
+        </div>
+
+        <!--tab组件-->
+        <tabs class="tabs" onchange="changeTabactive">
+            <tab-bar class="tab-bar">
+                <!-- https://api.douban.com/v2/movie/search?q=张艺谋 -->
+                <text class="tab-text">正在热映</text>
+                <!-- https://api.douban.com/v2/movie/in_theaters?count=20 -->
+                <text class="tab-text">即将上映</text>
+                <!-- https://api.douban.com/v2/movie/coming_soon?count=20 -->
+                <text class="tab-text">最近热门</text>
+                <!-- https://api.douban.com/v2/movie/top250?count=20 -->
+            </tab-bar>
+
+            <tab-content class="tab-content">
+                <!--热门-->
+                <div class="item-container">
+                    <div class="item-content">
+                        <text>
+                            <span style="color: red">热门</span>
+                        </text>
+                    </div>
+                </div>
+
+                <!--正映-->
+                <div class="item-container">
+                    <div class="item-content">
+                        <text>
+                            <span style="color: #abce4b">正映</span>
+                        </text>
+                    </div>
+                </div>
+
+                <!--将映-->
+                <div class="item-container">
+                    <div class="item-content">
+                        <text>
+                            <span style="color: #09ba07">将映</span>
+                        </text>
+                    </div>
+                </div>
+            </tab-content>
+        </tabs>
+    </div>
+</template>
+
+<style>
+    @import '../common/css/common.css';
+
+    .search {
+        flex: 5;
+        margin: 5px;
+        border-radius: 5px;
+        border-width: 2px;
+        padding: 2px 10px;
+        border-color: #2277AA;
+        color: #666666;
+        font-size: 32px;
+    }
+
+    .search-btn {
+        flex: 1;
+        height: 80px;
+        text-align: center;
+        border-radius: 10px;
+        margin: 5px;
+        color: #ffffff;
+        font-size: 32px;
+        background-color: #2277AA;
+    }
+
+    .tabs {
+        margin-top: 20px;
+        background-color: #ffffff;
+    }
+
+    .tab-content {
+        flex: 1;
+    }
+
+    .tab-bar {
+        height: 100px;
+        border-color: #bbbbbb;
+        color: #bbbbbb;
+        border-bottom-width: 1px;
+    }
+
+    .tab-text {
+        width: 300px;
+        text-align: center;
+        font-size: 36px;
+    }
+
+    .tab-text:active {
+        color: rgb(34, 119, 170);
+    }
+
+    .item-container {
+        padding-top: 30px;
+        padding-left: 30px;
+        padding-right: 30px;
+        flex-direction: column;
+    }
+
+    .item-content {
+        flex-direction: column;
+        padding-bottom: 30px;
+    }
+
+    .item-title {
+        padding-top: 50px;
+        padding-bottom: 20px;
+        color: #aaaaaa;
+    }
+</style>
+
+<script>
+    import prompt from '@system.prompt'
+
+    export default {
+        data: {
+            componentName: 'tabs',
+            time: '',
+            loadMore: true,
+            scrollPage: false,
+            btndisabled: false,
+            list_data: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }]
+        },
+        onInit: function () {
+            this.$page.setTitleBar({ text: '阅影' })
+            // 初始化time
+            this.time = new Date().getHours() + ":" + new Date().getMinutes();
+        },
+        changeTabactive: function (e) {
+            prompt.showToast({
+                message: '切换中。。第' + e.index + '页'
+            })
+            // 切换tab
+            console.log('----------切换tab: ' + e.index);
+        },
+        setTime: function (e) {
+            // time picker选择值后设置time
+            this.time = e.hour + ":" + e.minute;
+        },
+        scrollbottom: function () {
+            var that = this;
+            // list滚动到底部事件
+            setTimeout(function () {
+                that.list_data = that.list_data.concat([{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }]);
+            }, 1000);
+        },
+        goIndex: function () {
+            // list滚动到指定index位置
+            this.$element('list').scrollTo({ index: 0, smooth: true })
+        },
+        searchMovie: function() {
+
+        }
+
+    }
+</script>

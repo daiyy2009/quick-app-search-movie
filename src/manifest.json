@@ -13,10 +13,10 @@
     "logLevel": "log"
   },
   "router": {
-    "entry": "Hello",
+    "entry": "ux",
     "pages": {
-      "Hello": {
-        "component": "hello",
+      "ux": {
+        "component": "home",
         "path": "/"
       }
     }
@@ -28,7 +28,7 @@
     "titleBarTextColor": "#ffffff",
     "menu":true,
     "pages": {
-      "Hello": {
+      "ux": {
         "titleBarText": "TitleBar"
       }
     }
