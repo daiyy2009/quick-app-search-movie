@@ -3,7 +3,7 @@
         <div class="search-container">
             <input class="search" enterkeytype="search" onenterkeyclick="enterkeyclicked" placeholder="请输入电影名称、导演或演员" onchange="searchMovie">
             </input>
-            <input type="button" class="search-btn" value="搜索"/>
+            <input type="button" class="search-btn" value="搜索" />
         </div>
 
         <!--tab组件-->
@@ -21,11 +21,13 @@
             <tab-content class="tab-content">
                 <!--热门-->
                 <div class="item-container">
-                    <div class="item-content">
-                        <text>
-                            <span style="color: red">热门</span>
-                        </text>
-                    </div>
+                    <list class="list" onscrollbottom="loadMoreData">
+                        <list-item class="item" type="movie-item" for="moveList">
+                            <image class="item-image" src="{{$item.images.small}}"></image>
+                            <text class="item-title">{{$item.title}}</text>
+                            <rating class="item-rating" rating="{{$item.rating.average}}"></rating>
+                        </list-item>
+                    </list>
                 </div>
 
                 <!--正映-->
@@ -75,11 +77,6 @@
         background-color: #2277AA;
     }
 
-    .tabs {
-        margin-top: 20px;
-        background-color: #ffffff;
-    }
-
     .tab-content {
         flex: 1;
     }
@@ -87,7 +84,6 @@
     .tab-bar {
         height: 100px;
         border-color: #bbbbbb;
-        color: #bbbbbb;
         border-bottom-width: 1px;
     }
 
@@ -102,46 +98,55 @@
     }
 
     .item-container {
-        padding-top: 30px;
-        padding-left: 30px;
-        padding-right: 30px;
-        flex-direction: column;
+        padding: 5px;
     }
 
-    .item-content {
-        flex-direction: column;
-        padding-bottom: 30px;
+    .list {
+        columns: 3;
     }
 
-    .item-title {
-        padding-top: 50px;
-        padding-bottom: 20px;
-        color: #aaaaaa;
+    .item {
+        height: 400px;
+        margin: 8px;
+        flex-direction: column;
     }
 </style>
 
 <script>
     import prompt from '@system.prompt'
+    import fetch from '@system.fetch'
 
     export default {
         data: {
-            componentName: 'tabs',
-            time: '',
-            loadMore: true,
-            scrollPage: false,
-            btndisabled: false,
-            list_data: [{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }]
+            count: 20,
+            start: 0,
+            total: 0,
+            moveList: []
         },
         onInit: function () {
             this.$page.setTitleBar({ text: '阅影' })
-            // 初始化time
-            this.time = new Date().getHours() + ":" + new Date().getMinutes();
+            fetch.fetch({
+                url: 'https://api.douban.com/v2/movie/in_theaters?count=20',
+                success: (result) => {
+                    let dataObj;
+                    if(typeof result.data === 'string') {
+                        dataObj = JSON.parse(result.data)
+                    } else {
+                        dataObj = result.data
+                    }
+
+                    this.start = dataObj.start;
+                    this.total = dataObj.total;
+
+                    this.moveList = dataObj.subjects;
+                },
+                fail: function (data, code) {
+                    console.log("handling fail, code = " + code);
+                }
+            })
         },
         changeTabactive: function (e) {
-            prompt.showToast({
-                message: '切换中。。第' + e.index + '页'
-            })
-            // 切换tab
+
             console.log('----------切换tab: ' + e.index);
         },
         setTime: function (e) {
@@ -159,7 +164,10 @@
             // list滚动到指定index位置
             this.$element('list').scrollTo({ index: 0, smooth: true })
         },
-        searchMovie: function() {
+        searchMovie: function () {
+
+        },
+        loadMoreData: () => {
 
         }
 
