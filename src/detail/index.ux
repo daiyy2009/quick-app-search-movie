@@ -1,0 +1,32 @@
+<template>
+    <div class="container">
+        <div>
+            <input class="search-input" enterkeytype="search" onenterkeyclick="enterkeyclicked" placeholder="请输入电影名称、导演或演员" onchange="searchMovie">
+            </input>
+            <input class="search-btn" type="button" value="搜索" />
+        </div>
+    </div>
+</template>
+
+<style lang="less">
+    .container {
+        flex-direction: column;
+        color: #bbbbbb;
+    }
+</style>
+
+<script>
+    /**
+      TODO:
+      1. title长的滚动
+      2. loading 和 没有更多提示
+     */
+    import prompt from '@system.prompt'
+    import fetch from '@system.fetch'
+
+    export default {
+        data: {
+            title: "详情"
+        },
+    }
+</script>
