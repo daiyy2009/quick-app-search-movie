@@ -7,17 +7,21 @@
   "minPlatformVersion": 1000,
   "features": [],
   "permissions": [
-    { "origin": "*" }
+    {
+      "origin": "*"
+    }
   ],
   "config": {
     "logLevel": "log"
   },
   "router": {
-    "entry": "ux",
+    "entry": "home",
     "pages": {
-      "ux": {
-        "component": "home",
-        "path": "/"
+      "home": {
+        "component": "index"
+      },
+      "detail": {
+        "component": "index"
       }
     }
   },
@@ -26,10 +30,10 @@
     "titleBar": true,
     "titleBarBackgroundColor": "#0faeff",
     "titleBarTextColor": "#ffffff",
-    "menu":true,
+    "menu": true,
     "pages": {
-      "ux": {
-        "titleBarText": "TitleBar"
+      "home": {
+        "titleBarText": "阅影"
       }
     }
   }
