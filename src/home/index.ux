@@ -1,9 +1,9 @@
 <template>
     <div class="container">
         <div>
-            <input class="search-input" enterkeytype="search" onenterkeyclick="enterkeyclicked" placeholder="请输入电影名称、导演或演员" onchange="searchMovie">
+            <input id="search" class="search-input" value="{{searchKeywords}}" enterkeytype="search" placeholder="请输入电影名称、导演或演员" onchange="setSearchKey">
             </input>
-            <input class="search-btn" type="button" value="搜索" />
+            <input class="search-btn" type="button" value="搜索" onclick="doSearch({index:3})" />
         </div>
 
         <!--tab组件-->
@@ -24,7 +24,7 @@
                 <!--热门-->
                 <div class="content-container" for="[0,0,0]">
                     <list class="list" onscrollbottom="loadMoreData">
-                        <list-item class="item" type="movie-item" for="moveList" onclick="detail('detail')">
+                        <list-item class="item" type="movie-item" for="moveList" onclick="detail($item.id, $item.title)">
                             <div class="item-image">
                                 <image src="{{$item.images.small}}"></image>
                             </div>
@@ -150,6 +150,7 @@
     import prompt from '@system.prompt'
     import fetch from '@system.fetch'
     import router from '@system.router'
+    import storage from '@system.storage'
 
     export default {
         data: {
@@ -157,12 +158,15 @@
             keyMap: {
                 0: 'in_theaters',
                 1: 'coming_soon',
-                2: 'top250'
+                2: 'top250',
+                3: 'search'
             },
 
             count: 21,
             start: 0,
             total: 0,
+
+            searchKeywords: '',
 
             moveList: [],
 
@@ -170,87 +174,102 @@
             loadingText: '加载数据',
         },
         onInit: function () {
-            this._loadData();
+            this._loadListData();
         },
         changeTab: function (e) {
+            this.searchKeywords = 'a';
+            this.$element('search').attr.value = 'a'
             this._resetLoadData()
             this.key = this.keyMap[e.index]
-            this._loadData()
+            this._loadListData()
         },
-        setTime: function (e) {
-            // time picker选择值后设置time
-            this.time = e.hour + ":" + e.minute;
+        setSearchKey: function (e) {
+            this.searchKeywords = e.value;
         },
-        scrollbottom: function () {
-            var that = this;
-            // list滚动到底部事件
-            setTimeout(function () {
-                that.list_data = that.list_data.concat([{ name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }]);
-            }, 1000);
-        },
-        goIndex: function () {
-            // list滚动到指定index位置
-            this.$element('list').scrollTo({ index: 0, smooth: true })
-        },
-        searchMovie: function () {
-
+        doSearch: function (e) {
+            this._resetLoadData()
+            this.key = this.keyMap[e.index]
+            this._loadListData()
         },
         loadMoreData: function () {
             if (this.start < this.total) {
                 this.start = this.start + this.count
                 this.loadingText = '加载更多'
-                this._loadData()
+                this._loadListData()
             } else {
                 console.log('no more data.')
             }
         },
-        detail: function (src) {
-            // router.push({ 'uri': src });
+        detail: function (movieId, movieTitle) {
+            router.push({ 'uri': 'detail', params: { movieId, movieTitle } });
         },
         _getUrl: function (key) {
-            return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.start}`
+            let searchInfo = this.searchKeywords ? `&q=${this.searchKeywords}` : ''
+            return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.start}${searchInfo}`
         },
-        _loadData: function () {
+        _loadListData: function () {
             // ----- use mock data begin ------
-            this.moveList = Object.values(this.$app.$def.mock.movieData)[1].subjects
-            return 
+            // this.moveList = Object.values(this.$app.$def.mock.movieData)[1].subjects
+            // return
             // ----- use mock data end   ------
-            
+            let localData = storage.get({
+                key: this._getStorageKey(),
+                success: (data) => {
+                    if (data) {
+                        this._handleData(JSON.parse(data))
+                    } else {
+                        this._fetchData()
+                    }
+                },
+                fail: (error) => {
+                    this._fetchData()
+                }
+            });
+
+        },
+        _fetchData() {
             this.showLoading = true;
             fetch.fetch({
                 url: this._getUrl(this.key),
                 success: (result) => {
-                    let dataObj;
-                    if (typeof result.data === 'string') {
-                        dataObj = JSON.parse(result.data)
-                    } else {
-                        dataObj = result.data
-                    }
-
-                    this.start = dataObj.start;
-                    this.total = dataObj.total;
+                    let dataObj = JSON.parse(result.data)
 
                     if (dataObj.code === 112) {
                         prompt.showToast({
-                            message: "对不起，已到达API调用次数限制，请明日再使用本软件。"
+                            message: "对不起，已到达API调用次数限制，请1分钟后再使用本软件。"
                         })
 
                         this.showLoading = false;
                         return
                     }
-                    this.moveList = this.moveList.concat(dataObj.subjects);
+
                     this.showLoading = false;
+                    this._handleData(dataObj);
+                    this._upsertStorage(this._getStorageKey(), result.data);
                 },
                 fail: function (data, code) {
-                    console.log("handling fail, code = " + code);
+                    prompt.showToast({
+                        message: "数据加载失败"
+                    })
                     this.showLoading = false;
                 }
             })
+        },
+        _handleData(data) {
+            this.start = data.start;
+            this.total = data.total;
+            this.moveList = this.moveList.concat(data.subjects);
         },
         _resetLoadData() {
             this.start = 0
             this.total = 0
             this.moveList = []
+        },
+        _getStorageKey() {
+            return `list-${this.key}-${this.start}-${this.searchKeywords}`
+        },
+        _upsertStorage(key, value) {
+            storage.set({ key, value });
         }
     }
 </script>
