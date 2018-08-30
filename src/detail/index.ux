@@ -1,9 +1,61 @@
 <template>
     <div class="container">
-        <div>
-            <input class="search-input" enterkeytype="search" onenterkeyclick="enterkeyclicked" placeholder="请输入电影名称、导演或演员" onchange="searchMovie">
-            </input>
-            <input class="search-btn" type="button" value="搜索" />
+        <div class="header">
+            <div class="img">
+                <image src="{{movieDetail.images.small}}"></image>
+            </div>
+            <div class="detail">
+                <div class="info">
+                    <div class="item">
+                        <text class="label">导演:</text>
+                        <text class="text">{{directors}}</text>
+                    </div>
+                    <div class="item">
+                        <text class="label">主演:</text>
+                        <text class="text">{{casts}}</text>
+                    </div>
+
+                    <div class="item">
+                        <text class="label">类型:</text>
+                        <text class="text">{{movieDetail.genres.join(' / ')}}</text>
+                    </div>
+                    <div class="item">
+                        <text class="label">国家:</text>
+                        <text class="text">{{movieDetail.countries.join(' / ')}}</text>
+                    </div>
+                    <div class="item">
+                        <text class="label">年份:</text>
+                        <text class="text">{{movieDetail.year}}</text>
+                    </div>
+                </div>
+                <div class="rating">
+                    <text class="score"> {{movieDetail.rating.average.toFixed(1)}} </text>
+                    <div class="detail">
+                        <div class="star">
+                            <rating rating={{movieDetail.rating.average/2}}></rating>
+                        </div>
+                        <div class="count">
+                            <text>{{movieDetail.ratings_count}} 人评价</text>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="intro">
+            <text class="title">剧情简介</text>
+            <text class="content">{{movieDetail.summary}}</text>
+        </div>
+        <div class="casts">
+            <!-- <swiper class="swiper" autoplay="true" interval="2000" indicator="false" loop="true"> -->
+            <div for="movieDetail.casts">
+                <image src="{{$item.avatars.small}}">
+                </image>
+                <text>
+                    {{$item.name}}
+                </text>
+            </div>
+            <!-- </swiper> -->
         </div>
     </div>
 </template>
@@ -12,21 +64,181 @@
     .container {
         flex-direction: column;
         color: #bbbbbb;
+
+        .header {
+            flex: 1.5;
+            display: flex;
+
+            .img {
+                flex: 2;
+                margin: 5px;
+
+                image {
+                    height: 100%;
+                    width: 100%;
+                }
+            }
+            .detail {
+                flex-direction: column;
+                flex: 3;
+                margin: 5px;
+
+                .info {
+                    flex-direction: column;
+                    align-items: flex-start;
+
+                    .item {
+                        align-items: flex-start;
+
+                        .label {
+                            color: #2277AA;
+                        }
+
+                        .text {
+                            margin-left: 8px;
+                        }
+                    }
+                }
+
+                .rating {
+                    bottom: 0px;
+                    margin-bottom: 0px;
+
+                    >.score {
+                        flex: 1.5;
+                        font-size: 58px;
+                        padding: 5px;
+                    }
+
+                    >.detail {
+                        flex: 5;
+                        flex-direction: column;
+
+                        .star {
+                            height: 60px;
+                            padding: 10px 100px 0px 0px;
+                        }
+
+                        .count {
+                            padding: 10px 100px 0px 5px;
+                        }
+                    }
+                }
+            }
+        }
+
+        .intro {
+            margin: 5px;
+            flex: 3;
+            flex-direction: column;
+
+            .title {
+                color: #2277AA;
+                font-size: 36px;
+            }
+        }
+
+        .casts {
+            flex: 1;
+
+            >div {
+                flex-direction: column;
+                margin: 5px;
+                flex: 1;
+
+                >image {
+                    width: 100%;
+                }
+
+                >text {
+                    color: #2277AA;
+                    font-size: 26px;
+                    text-align: center;
+                }
+            }
+        }
     }
 </style>
 
 <script>
-    /**
-      TODO:
-      1. title长的滚动
-      2. loading 和 没有更多提示
-     */
+
     import prompt from '@system.prompt'
     import fetch from '@system.fetch'
+    import storage from '@system.storage'
 
     export default {
         data: {
-            title: "详情"
+            title: "详情",
+            movieDetail: {
+                year: '0000',
+                images: [],
+                casts: [],
+                genres: [],
+                countries: [],
+                directors: [],
+                rating: { average: 0 },
+                ratings_count: ''
+            },
+            directors: '',
+            casts: '',
+            detailUrl: 'http://api.douban.com/v2/movie/subject/',
         },
+        onInit: function () {
+            this.$page.setTitleBar({ text: this.movieTitle })
+            this._loadDetailData();
+        },
+        _loadDetailData: function() {
+            // ----- use mock data begin ------
+            // this.movieDetail = Object.values(this.$app.$def.mock.movieData)[2]
+            // this._handleData(this.movieDetail);
+            // return
+            // ----- use mock data end   ------
+            let localData = storage.get({
+                key: `detail-${this.movieId}`,
+                success: (data) => {
+                    if (data) {
+                        this._handleData(JSON.parse(data))
+                    } else {
+                        this._fetchData()
+                    }
+                },
+                fail: (error) => {
+                    this._fetchData()
+                }
+            });
+        },
+        _fetchData: function () {
+            let url = `${this.detailUrl}${this.movieId}`
+            fetch.fetch({
+                url,
+                success: (result) => {
+                    let dataObj = JSON.parse(result.data)
+
+                    if (dataObj.code === 112) {
+                        prompt.showToast({
+                            message: "对不起，已到达API调用次数限制，请1分钟后再使用本软件。"
+                        })
+                        return
+                    }
+
+                    this._handleData(dataObj);
+                    this._upsertStorage(`detail-${this.movieId}`, result.data);
+
+                },
+                fail: function (data, code) {
+                    prompt.showToast({
+                        message: "数据加载失败"
+                    })
+                }
+            })
+        },
+        _handleData: function (data) {
+            this.movieDetail = data;
+            this.directors = data.directors.map(v => v.name).join(' / ')
+            this.casts = data.casts.map(v => v.name).join(' / ')
+        },
+        _upsertStorage: function (key, value) {
+            storage.set({ key, value });
+        }
     }
 </script>
