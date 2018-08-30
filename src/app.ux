@@ -4,10 +4,17 @@
     1. title长的滚动
     2. loading 和 没有更多提示
     3. 不联网走mock
+    4. 下拉刷新 数据请求回来之后 清理掉之前的缓存数据
+    5. 演员图片调整
+    6. search结果能提示没有数据
     */
-    
+
   import mock from './common/mock/mock.js'
-  
+
+  const injectRef = Object.getPrototypeOf(global) || global;
+  // 注入regeneratorRuntime
+  injectRef.regeneratorRuntime = require('babel-runtime/regenerator');
+
   module.exports = {
     onCreate() {
       console.info('Application onCreate');
