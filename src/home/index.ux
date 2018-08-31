@@ -23,22 +23,29 @@
             <tab-content class="tab-content">
                 <!--热门-->
                 <div class="content-container" for="[0,0,0]">
-                    <list class="list" onscrollbottom="loadMoreData">
-                        <list-item class="item" type="movie-item" for="moveList" onclick="detail($item.id, $item.title)">
+                    <div if="{{isShowLoadNew}}" class="load-new">
+                        <progress type="circular"></progress>
+                        <text>{{loadNewText}}</text>
+                    </div>
+                    <div if="{{isShowNodata}}" class="nodata">
+                        <text>{{nodataText}}</text>
+                    </div>
+                    <list class="list" onscrollbottom="loadMoreData" onscrolltop="loadNewData">
+                        <list-item class="item" type="movie-item" for="moveList" @click="detail($item.id, $item.title)">
                             <div class="item-image">
                                 <image src="{{$item.images.small}}"></image>
                             </div>
                             <text class="item-title">{{$item.title}}</text>
                             <div class="rating">
-                                <rating class="rating-item" rating="{{$item.rating.average}}"></rating>
+                                <rating class="rating-item" rating="{{$item.rating.average}}" indicator="true"></rating>
                                 <text class="rating-score">{{$item.rating.average.toFixed(1)}}</text>
                             </div>
                         </list-item>
                     </list>
 
-                    <div if="{{showLoading}}" class="load-more">
+                    <div if="{{isShowLoadMore}}" class="load-more">
                         <progress type="circular"></progress>
-                        <text>{{loadingText}}</text>
+                        <text>{{loadMoreText}}</text>
                     </div>
                 </div>
             </tab-content>
@@ -136,11 +143,15 @@
                     }
                 }
 
-                .load-more {
+                .load-more,
+                .load-new,
+                .nodata {
                     justify-content: center;
                     align-items: center;
                     height: 100px;
                 }
+
+                .load-new {}
             }
         }
     }
@@ -154,7 +165,7 @@
 
     export default {
         data: {
-            key: 'in_theaters',
+            urlType: 'in_theaters',
             keyMap: {
                 0: 'in_theaters',
                 1: 'coming_soon',
@@ -170,44 +181,77 @@
 
             moveList: [],
 
-            showLoading: false,
-            loadingText: '加载数据',
+            isShowLoadMore: false,
+            isShowLoadNew: false,
+            isShowNodata: false,
+            loadMoreText: '加载数据',
+            loadNewText: '正在加载最新数据',
+            nodataText: '没有你要找的内容，可以换个关键词试试',
         },
-        onInit: function () {
-            this._loadListData();
+        onInit() {
+            if (this.moveList.length === 0) {
+                this._loadListData();
+            }
         },
-        changeTab: function (e) {
-            this.searchKeywords = 'a';
-            this.$element('search').attr.value = 'a'
+        changeTab(e) {
+            this.searchKeywords = ''
             this._resetLoadData()
-            this.key = this.keyMap[e.index]
+            this.urlType = this.keyMap[e.index]
             this._loadListData()
         },
-        setSearchKey: function (e) {
+        setSearchKey(e) {
             this.searchKeywords = e.value;
         },
-        doSearch: function (e) {
+        doSearch(e) {
+            if (!this.searchKeywords) return;
+
             this._resetLoadData()
-            this.key = this.keyMap[e.index]
+            this.urlType = this.keyMap[e.index]
             this._loadListData()
         },
-        loadMoreData: function () {
+        loadNewData() {
+            let localData = storage.get({
+                key: 'lastLoadTime',
+                success: (data) => {
+                    let currentTime = new Date().getTime();
+                    if (data && (currentTime - data) / 3600000 < 1) {
+                        // prompt.showToast({
+                        //     message: "当前数据已是最新"
+                        // })
+                        return;
+                    }
+                    this._excuteLoadNewData()
+                },
+                fail: (error) => {
+                    this._excuteLoadNewData()
+                }
+            });
+        },
+        _excuteLoadNewData() {
+            this._resetLoadData()
+            storage.clear();
+            this.loadMoreText = '正在加载最新数据'
+            this.isShowLoadMore = true;
+            this._loadListData()
+            this._upsertStorage('lastLoadTime', new Date().getTime());
+        },
+        loadMoreData() {
             if (this.start < this.total) {
                 this.start = this.start + this.count
-                this.loadingText = '加载更多'
+                this.loadMoreText = '加载更多'
                 this._loadListData()
             } else {
                 console.log('no more data.')
             }
         },
-        detail: function (movieId, movieTitle) {
+        detail(movieId, movieTitle) {
             router.push({ 'uri': 'detail', params: { movieId, movieTitle } });
         },
-        _getUrl: function (key) {
+        _getUrl(key) {
             let searchInfo = this.searchKeywords ? `&q=${this.searchKeywords}` : ''
             return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.start}${searchInfo}`
         },
-        _loadListData: function () {
+        _loadListData() {
             // ----- use mock data begin ------
             // this.moveList = Object.values(this.$app.$def.mock.movieData)[1].subjects
             // return
@@ -228,9 +272,9 @@
 
         },
         _fetchData() {
-            this.showLoading = true;
+            this.isShowLoadMore = true;
             fetch.fetch({
-                url: this._getUrl(this.key),
+                url: this._getUrl(this.urlType),
                 success: (result) => {
                     let dataObj = JSON.parse(result.data)
 
@@ -239,19 +283,24 @@
                             message: "对不起，已到达API调用次数限制，请1分钟后再使用本软件。"
                         })
 
-                        this.showLoading = false;
+                        this.isShowLoadNew = false;
+                        this.isShowLoadMore = false;
                         return
                     }
 
-                    this.showLoading = false;
+                    this.isShowLoadNew = false;
+                    this.isShowLoadMore = false;
+
                     this._handleData(dataObj);
                     this._upsertStorage(this._getStorageKey(), result.data);
                 },
-                fail: function (data, code) {
+                fail: (data, code) => {
                     prompt.showToast({
                         message: "数据加载失败"
                     })
-                    this.showLoading = false;
+
+                    this.isShowLoadNew = false;
+                    this.isShowLoadMore = false;
                 }
             })
         },
@@ -259,14 +308,19 @@
             this.start = data.start;
             this.total = data.total;
             this.moveList = this.moveList.concat(data.subjects);
+
+            if (this.moveList.length === 0) {
+                this.isShowNodata = true
+            }
         },
         _resetLoadData() {
             this.start = 0
             this.total = 0
             this.moveList = []
+            this.isShowNodata = false;
         },
         _getStorageKey() {
-            return `list-${this.key}-${this.start}-${this.searchKeywords}`
+            return `list-${this.urlType}-${this.start}-${this.searchKeywords}`
         },
         _upsertStorage(key, value) {
             storage.set({ key, value });
