@@ -126,6 +126,8 @@
 
                         .item-title {
                             flex: 1.7
+                            lines: 2;
+                            text-overflow: ellipsis;
                         }
 
                         .rating {
