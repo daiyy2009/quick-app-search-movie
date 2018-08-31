@@ -27,12 +27,16 @@
                         <text class="label">年份:</text>
                         <text class="text">{{movieDetail.year}}</text>
                     </div>
+                    <div class="item">
+                        <text class="label">又名:</text>
+                        <text class="text">{{movieDetail.aka.join(' / ')}}</text>
+                    </div>
                 </div>
                 <div class="rating">
                     <text class="score"> {{movieDetail.rating.average.toFixed(1)}} </text>
                     <div class="detail">
                         <div class="star">
-                            <rating rating={{movieDetail.rating.average/2}}></rating>
+                            <rating rating={{movieDetail.rating.average/2}} indicator="true"></rating>
                         </div>
                         <div class="count">
                             <text>{{movieDetail.ratings_count}} 人评价</text>
@@ -49,7 +53,7 @@
         <div class="casts">
             <!-- <swiper class="swiper" autoplay="true" interval="2000" indicator="false" loop="true"> -->
             <div for="movieDetail.casts">
-                <image src="{{$item.avatars.small}}">
+                <image src="{{$item.avatars && $item.avatars.small}}">
                 </image>
                 <text>
                     {{$item.name}}
@@ -66,16 +70,15 @@
         color: #bbbbbb;
 
         .header {
-            flex: 1.5;
             display: flex;
-
+            flex: 1;
             .img {
                 flex: 2;
                 margin: 5px;
 
                 image {
-                    height: 100%;
                     width: 100%;
+                    resize-mode: contain;
                 }
             }
             .detail {
@@ -128,8 +131,8 @@
         }
 
         .intro {
+            flex: 5;
             margin: 5px;
-            flex: 3;
             flex-direction: column;
 
             .title {
@@ -139,6 +142,7 @@
         }
 
         .casts {
+            margin-top: 10px;
             flex: 1;
 
             >div {
@@ -148,6 +152,7 @@
 
                 >image {
                     width: 100%;
+                    resize-mode: contain;
                 }
 
                 >text {
@@ -176,6 +181,7 @@
                 genres: [],
                 countries: [],
                 directors: [],
+                aka: [],
                 rating: { average: 0 },
                 ratings_count: ''
             },
@@ -183,11 +189,11 @@
             casts: '',
             detailUrl: 'http://api.douban.com/v2/movie/subject/',
         },
-        onInit: function () {
+        onInit() {
             this.$page.setTitleBar({ text: this.movieTitle })
             this._loadDetailData();
         },
-        _loadDetailData: function() {
+        _loadDetailData() {
             // ----- use mock data begin ------
             // this.movieDetail = Object.values(this.$app.$def.mock.movieData)[2]
             // this._handleData(this.movieDetail);
@@ -207,7 +213,7 @@
                 }
             });
         },
-        _fetchData: function () {
+        _fetchData() {
             let url = `${this.detailUrl}${this.movieId}`
             fetch.fetch({
                 url,
@@ -225,19 +231,19 @@
                     this._upsertStorage(`detail-${this.movieId}`, result.data);
 
                 },
-                fail: function (data, code) {
+                fail: (data, code) => {
                     prompt.showToast({
                         message: "数据加载失败"
                     })
                 }
             })
         },
-        _handleData: function (data) {
+        _handleData(data) {
             this.movieDetail = data;
             this.directors = data.directors.map(v => v.name).join(' / ')
             this.casts = data.casts.map(v => v.name).join(' / ')
         },
-        _upsertStorage: function (key, value) {
+        _upsertStorage(key, value) {
             storage.set({ key, value });
         }
     }
