@@ -21,7 +21,6 @@
             </tab-bar>
 
             <tab-content class="tab-content">
-                <!--热门-->
                 <div class="content-container" for="[0,0,0]">
                     <div if="{{isShowLoadNew}}" class="load-new">
                         <progress type="circular"></progress>
@@ -217,9 +216,6 @@
                 success: (data) => {
                     let currentTime = new Date().getTime();
                     if (data && (currentTime - data) / 3600000 < 1) {
-                        // prompt.showToast({
-                        //     message: "当前数据已是最新"
-                        // })
                         return;
                     }
                     this._excuteLoadNewData()

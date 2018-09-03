@@ -51,7 +51,6 @@
             <text class="content">{{movieDetail.summary}}</text>
         </div>
         <div class="casts">
-            <!-- <swiper class="swiper" autoplay="true" interval="2000" indicator="false" loop="true"> -->
             <div for="movieDetail.casts">
                 <image src="{{$item.avatars && $item.avatars.small}}">
                 </image>
@@ -59,7 +58,6 @@
                     {{$item.name}}
                 </text>
             </div>
-            <!-- </swiper> -->
         </div>
     </div>
 </template>
@@ -174,7 +172,6 @@
 
     export default {
         data: {
-            title: "详情",
             movieDetail: {
                 year: '0000',
                 images: [],
@@ -195,11 +192,6 @@
             this._loadDetailData();
         },
         _loadDetailData() {
-            // ----- use mock data begin ------
-            // this.movieDetail = Object.values(this.$app.$def.mock.movieData)[2]
-            // this._handleData(this.movieDetail);
-            // return
-            // ----- use mock data end   ------
             let localData = storage.get({
                 key: `detail-${this.movieId}`,
                 success: (data) => {
