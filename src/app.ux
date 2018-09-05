@@ -9,8 +9,8 @@
     6. √ search结果能提示没有数据
     7. √ 第一次进来闪动问题
     8. √ 一个小时之内不重复更新数据，否则提示数据已是最新
-    9. search result 展示问题，加一个隐藏的tab？采用数据换位方法？tabs的index属性？
-    10. 分页数据各自私有
+    9. √ search result 展示问题，加一个隐藏的tab？采用数据换位方法？tabs的index属性？
+    10.√ 分页数据各自私有
     */
 
   import mock from './common/mock/mock.js'
