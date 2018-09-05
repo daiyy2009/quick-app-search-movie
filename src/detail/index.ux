@@ -189,7 +189,7 @@
         },
         onInit() {
             this.$page.setTitleBar({ text: this.movieTitle })
-            this._loadDetailData();
+            this._loadDetailData()
         },
         _loadDetailData() {
             // ----- use mock data begin ------
@@ -225,8 +225,8 @@
                         return
                     }
 
-                    this._handleData(dataObj);
-                    this._upsertStorage(`detail-${this.movieId}`, result.data);
+                    this._handleData(dataObj)
+                    this._upsertStorage(`detail-${this.movieId}`, result.data)
 
                 },
                 fail: (data, code) => {
@@ -237,12 +237,12 @@
             })
         },
         _handleData(data) {
-            this.movieDetail = data;
+            this.movieDetail = data
             this.directors = data.directors.map(v => v.name).join(' / ')
             this.casts = data.casts.map(v => v.name).join(' / ')
         },
         _upsertStorage(key, value) {
-            storage.set({ key, value });
+            storage.set({ key, value })
         }
     }
 </script>
