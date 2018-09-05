@@ -225,6 +225,8 @@
                 this._resetLoadData()
                 this.loadMoreText = '加载数据'
                 this._loadListData()
+            } else {
+                this.isShowNodata = false
             }
         },
         setSearchKey(e) {
@@ -279,10 +281,6 @@
             return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.movieCategory[this.movieCategoryIndex].start}${searchInfo}`
         },
         _loadListData() {
-            // ----- use mock data begin ------
-            // this.movieCategory[this.movieCategoryIndex].list = Object.values(this.$app.$def.mock.movieData)[1].subjects
-            // return
-            // ----- use mock data end   ------
             let localData = storage.get({
                 key: this._getStorageKey(),
                 success: (data) => {
