@@ -11,7 +11,7 @@
                 <text class="tab-text">正在热映</text>
                 <text class="tab-text">即将上映</text>
                 <text class="tab-text">最近热门</text>
-                <text class="tab-search" show="false">搜索结果</text>
+                <text class="tab-search">搜索结果</text>
             </tab-bar>
 
             <tab-content class="tab-content">
@@ -148,7 +148,7 @@
                 .nodata {
                     justify-content: center;
                     align-items: center;
-                    height: 100px;
+                    padding: 20px;
                 }
 
                 .load-new {}
@@ -175,26 +175,24 @@
             count: 15,
 
             searchKeywords: '',
+            oldSearchKeywords: '',
+            isSearchMode: false,
 
             movieCategoryIndex: 0,
             movieCategory: [
                 {
-                    start: 0,
                     total: 0,
                     list: []
                 },
                 {
-                    start: 0,
                     total: 0,
                     list: []
                 },
                 {
-                    start: 0,
                     total: 0,
                     list: []
                 },
                 {
-                    start: 0,
                     total: 0,
                     list: []
                 }
@@ -209,15 +207,16 @@
             loadNewText: '正在加载最新数据',
             nodataText: '没有你要找的内容，可以换个关键词试试',
         },
-        onInit() {
-            if (this.movieCategory.every(v => { return v.list.length === 0 })) {
-                this._loadListData();
-            }
-        },
         changeTab(e) {
+            if (this.isSearchMode) {
+                return
+            }
+
             this.movieCategoryIndex = e.index;
 
-            if (this.movieCategoryIndex !== 3) {
+            if (this.movieCategoryIndex === 3) {
+                this.searchKeywords = this.oldSearchKeywords
+            } else {
                 this.searchKeywords = ''
             }
 
@@ -234,7 +233,8 @@
         },
         doSearch(e) {
             if (!this.searchKeywords) return
-
+            this.oldSearchKeywords = this.searchKeywords
+            this.isSearchMode = true
             this.movieCategoryIndex = e.index
             this._resetLoadData()
             this.isLoadMore = false;
@@ -256,6 +256,10 @@
             });
         },
         _excuteLoadNewData() {
+            this.movieCategory.forEach(item => {
+                item.list = []
+            })
+
             this._resetLoadData()
             storage.clear()
             this.loadMoreText = '正在加载最新数据'
@@ -264,25 +268,27 @@
             this._upsertStorage('lastLoadTime', new Date().getTime())
         },
         loadMoreData() {
-            if (this.movieCategory[this.movieCategoryIndex].start < this.movieCategory[this.movieCategoryIndex].total) {
-                this.movieCategory[this.movieCategoryIndex].start = this.movieCategory[this.movieCategoryIndex].start + this.count
+            if (this.movieCategory[this.movieCategoryIndex].list.length < this.movieCategory[this.movieCategoryIndex].total) {
                 this.loadMoreText = '加载更多'
                 this.isLoadMore = true
                 this._loadListData()
             } else {
-                console.log('no more data.')
+                prompt.showToast({
+                    message: "没有更多数据"
+                })
             }
         },
         detail(movieId, movieTitle) {
             router.push({ 'uri': 'detail', params: { movieId, movieTitle } })
         },
         _getUrl(key) {
-            let searchInfo = this.searchKeywords ? `&q=${this.searchKeywords}` : ''
-            return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.movieCategory[this.movieCategoryIndex].start}${searchInfo}`
+            let searchInfo = (this.movieCategoryIndex === 3 && this.searchKeywords) ? `&q=${this.searchKeywords}` : ''
+            return `https://api.douban.com/v2/movie/${key}?count=${this.count}&start=${this.movieCategory[this.movieCategoryIndex].list.length}${searchInfo}`
         },
         _loadListData() {
+            this.isShowNodata = false
             let localData = storage.get({
-                key: this._getStorageKey(),
+                key: this._getStorageKey(this.movieCategory[this.movieCategoryIndex].list.length),
                 success: (data) => {
                     if (data) {
                         this._handleData(JSON.parse(data))
@@ -307,6 +313,11 @@
                             message: "对不起，已到达API调用次数限制，请1分钟后再使用本软件。"
                         })
 
+                        if (this.movieCategory[this.movieCategoryIndex].list.length === 0) {
+                            this.nodataText = "由于API调用次数限制，目前无法加载数据，请1分钟后再试。"
+                            this.isShowNodata = true
+                        }
+
                         this.isShowLoadNew = false
                         this.isShowLoadMore = false
                         return
@@ -325,30 +336,42 @@
 
                     this.isShowLoadNew = false
                     this.isShowLoadMore = false
+                    this.isSearchMode = false
                 }
             })
         },
         _handleData(data) {
-            this.movieCategory[this.movieCategoryIndex].start = data.start
-            this.movieCategory[this.movieCategoryIndex].total = data.total
 
             if (this.isLoadMore) {
-                this.movieCategory[this.movieCategoryIndex].list = this.movieCategory[this.movieCategoryIndex].list.concat(data.subjects)
+                if (data.start === this.movieCategory[this.movieCategoryIndex].list.length) {
+                    this.movieCategory[this.movieCategoryIndex].list = this.movieCategory[this.movieCategoryIndex].list.concat(data.subjects)
+                }
             } else {
                 this.movieCategory[this.movieCategoryIndex].list = data.subjects
             }
 
             if (this.movieCategory[this.movieCategoryIndex].list.length === 0) {
+                this.nodataText = "没有你要找的内容，可以换个关键词试试。"
                 this.isShowNodata = true
+            }
+
+            this.movieCategory[this.movieCategoryIndex].total = data.total
+            // is seach mode
+            if (this.isSearchMode) {
+                this.isSearchMode = false
             }
         },
         _resetLoadData() {
-            this.movieCategory[this.movieCategoryIndex].start = 0
             this.movieCategory[this.movieCategoryIndex].total = 0
             this.isShowNodata = false
         },
-        _getStorageKey() {
-            return `list-${this.keyMap[this.movieCategoryIndex]}-${this.movieCategory[this.movieCategoryIndex].start}-${this.searchKeywords}`
+        _getStorageKey(start) {
+            let searchCondition = ''
+            if (this.movieCategoryIndex === 3) {
+                searchCondition = `-${this.searchKeywords}`;
+            }
+            start = start || (this.movieCategory[this.movieCategoryIndex].list.length - this.count)
+            return `list-${this.keyMap[this.movieCategoryIndex]}-${start}${searchCondition}`
         },
         _upsertStorage(key, value) {
             storage.set({ key, value })
