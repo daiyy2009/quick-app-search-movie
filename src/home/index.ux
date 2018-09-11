@@ -265,7 +265,6 @@
             this.loadMoreText = '正在加载最新数据'
             this.isShowLoadMore = true
             this._loadListData()
-            this._upsertStorage('lastLoadTime', new Date().getTime())
         },
         loadMoreData() {
             if (this.movieCategory[this.movieCategoryIndex].list.length < this.movieCategory[this.movieCategoryIndex].total) {
@@ -328,6 +327,7 @@
 
                     this._handleData(dataObj)
                     this._upsertStorage(this._getStorageKey(), result.data)
+                    this._upsertStorage('lastLoadTime', new Date().getTime())
                 },
                 fail: (data, code) => {
                     prompt.showToast({
