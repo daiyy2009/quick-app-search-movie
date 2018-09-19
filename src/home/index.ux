@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div>
-            <input id="search" class="search-input" value="{{searchKeywords}}" enterkeytype="search" placeholder="请输入电影名称、导演或演员" onchange="setSearchKey">
+            <input id="search" class="search-input" value="{{searchKeywords}}" enterkeytype="search" placeholder="请输入电影名称、导演或演员" onchange="setSearchKey" onenterkeyclick="doSearch({index:3})">
             </input>
             <input class="search-btn" type="button" value="搜索" onclick="doSearch({index:3})" />
         </div>
