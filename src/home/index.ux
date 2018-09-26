@@ -30,7 +30,7 @@
                             </div>
                             <text class="item-title">{{$item.title}}</text>
                             <div class="rating">
-                                <rating class="rating-item" rating="{{$item.rating.average}}" indicator="true"></rating>
+                                <rating class="rating-item" rating="{{($item.rating.average/2).toFixed(1)}}" indicator="true"></rating>
                                 <text class="rating-score">{{$item.rating.average.toFixed(1)}}</text>
                             </div>
                         </list-item>
