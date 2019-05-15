@@ -2,3 +2,4 @@ dist/com.daiyaya.rpk
 build
 .vscode
 sign/release/
+.fastapp
